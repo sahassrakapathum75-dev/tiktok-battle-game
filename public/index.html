@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="si">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>TikTok LIVE Battle Arena</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#100d18;color:#fff;font-family:system-ui,Arial,sans-serif}
+body{display:flex;justify-content:center;padding:10px}
+.phone{width:min(100%,430px);min-height:94vh;aspect-ratio:9/16;max-height:900px;background:linear-gradient(180deg,#21142c,#120e1b 60%,#24152b);border:2px solid #6d4c86;border-radius:26px;padding:12px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 12px 40px #0009}
+header{text-align:center;flex:none}h1{font-size:clamp(19px,5vw,25px);margin:2px 0;color:#ffdb83;text-shadow:0 2px 12px #ff9e39}header p{font-size:11px;color:#d8c8e5;margin:0 0 8px}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:12px;background:#392447;border:1px solid #76548c;border-radius:12px;padding:7px 10px;margin-bottom:8px}
+.arena{position:relative;flex:1;min-height:330px;max-height:590px;width:100%;overflow:hidden;border:9px solid #75472b;border-radius:24px;background:radial-gradient(ellipse at center,#c88c4c 0 43%,#a86c37 44% 67%,#71401f 68%);box-shadow:inset 0 0 0 5px #e0b276,0 5px 18px #0008}
+.arena:before{content:"";position:absolute;inset:7%;border:3px dashed #f4d09a;border-radius:50%;opacity:.7}
+.arena:after{content:"BATTLE ARENA";position:absolute;left:0;right:0;top:48%;text-align:center;font-size:20px;font-weight:1000;color:#fff5;letter-spacing:3px;pointer-events:none}
+.player{position:absolute;width:64px;transform:translate(-50%,-50%);z-index:2;text-align:center;pointer-events:none}
+.avatar{width:43px;height:43px;margin:auto;border-radius:50%;border:3px solid #ffe6a8;background:linear-gradient(135deg,#58d1d1,#6250a8);display:grid;place-items:center;font-size:23px;overflow:hidden;box-shadow:0 3px 8px #29140e}
+.avatar img{width:100%;height:100%;object-fit:cover}.name{font-size:10px;font-weight:900;white-space:nowrap;text-shadow:0 2px 4px #211020;overflow:hidden;text-overflow:ellipsis}
+.hp{height:5px;background:#381b1b;border-radius:8px;margin:2px 5px;overflow:hidden}.hp span{display:block;height:100%;background:#6bea79;width:100%}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:9px 0 7px;flex:none}
+button{border:0;border-radius:12px;padding:11px 8px;font-size:13px;font-weight:900;background:#ffd06b;color:#321b16}
+button.alt{background:#e8d9f4;color:#2a1a35}button:active{transform:scale(.98)}
+.bottom{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:none;min-height:100px}
+.panel{background:#2b1d36;border:1px solid #644779;border-radius:13px;padding:8px;min-width:0}
+.panel h3{font-size:12px;color:#ffdc91;margin:0 0 5px}.list{font-size:10px;max-height:80px;overflow:auto}.item{display:flex;justify-content:space-between;gap:3px;padding:3px 0;border-bottom:1px solid #ffffff18}.feed{color:#9df5b0}
+.status{text-align:center;font-size:12px;color:#ffe0a0;min-height:18px;margin:2px 0}
+.footer{text-align:center;font-size:9px;color:#bca9ca;margin-top:6px;flex:none}
+#win{display:none;position:absolute;inset:0;z-index:8;background:#130d1beF;align-items:center;justify-content:center;text-align:center;padding:20px}
+.winbox{background:linear-gradient(145deg,#764c25,#34203e);border:3px solid #ffda80;border-radius:22px;padding:25px 16px;width:90%;box-shadow:0 0 30px #ffc85b}
+.winbox .cup{font-size:58px;animation:bounce .8s infinite alternate}@keyframes bounce{to{transform:translateY(-9px) rotate(5deg)}}
+.winbox h2{color:#ffdc83;margin:5px}.winbox p{font-size:13px}
+@media(min-height:850px){.arena{max-height:600px}}
+</style></head>
+<body>
+<div class="phone">
+<header><h1>⚔️ BATTLE ARENA ⚔️</h1><p>COMMENT / LIKE / GIFT TO JOIN &amp; POWER UP!</p></header>
+<div class="top"><span id="liveBadge">🔴 CONNECTING...</span><span id="count">Players: 0</span><span id="round">ROUND 1</span></div>
+<div class="arena" id="arena">
+ <div id="win"><div class="winbox"><div class="cup">🏆✨</div><h2>WINNER!</h2><div id="winnerName" style="font-size:23px;font-weight:1000"></div><p>ARENA CHAMPION</p><button id="again">PLAY AGAIN</button></div></div>
+</div>
+<div class="status" id="status">LIVE Battle සූදානම්! Start ඔබන්න 👀</div>
+<div class="controls">
+<button id="start">▶ START BATTLE</button><button class="alt" id="pause">Ⅱ PAUSE</button>
+<button class="alt" id="join">＋ DEMO JOIN</button><button class="alt" id="photo">🖼️ ADD PHOTO</button>
+</div>
+<div class="bottom">
+ <div class="panel"><h3>🏆 RANKING</h3><div class="list" id="ranking"></div></div>
+ <div class="panel"><h3>🔔 LIVE FEED</h3><div class="list" id="feed"></div></div>
+</div>
+<div class="footer">TikTok LIVE Interactive Arena • @sahassraka</div>
+<input id="file" type="file" accept="image/*" hidden>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const arena=document.getElementById('arena'),statusEl=document.getElementById('status'),ranking=document.getElementById('ranking'),feed=document.getElementById('feed'),count=document.getElementById('count'),win=document.getElementById('win'),liveBadge=document.getElementById('liveBadge');
+const names=['Tiger','Ninja','Flash','Rocky','Star','Shadow','Comet','Blaze','Milo','Nova','Pixel','Storm'];
+const faces=['🥷','🐯','🤖','🦊','🐼','🐸','🐵','🦁','🐻','🐨','🐱','🐰'];
+let ps=[],id=1,running=false,raf=0,last=0,logs=[],photoUrl=null,roundNo=1;
+const MAX_PLAYERS=14;
+
+function addLog(msg){
+ logs.unshift(msg);
+ logs=logs.slice(0,10);
+}
+
+function findPlayer(username){
+ return ps.find(p=>p.name.toLowerCase()===username.toLowerCase());
+}
+
+function addPlayer(customName=null){
+ if(customName){
+  const existing=findPlayer(customName);
+  if(existing) return existing;
+ }
+ if(ps.length>=MAX_PLAYERS){
+  statusEl.textContent='Arena එක පිරී ඇත!';
+  return null;
+ }
+ const n=customName || (names[(id-1)%names.length]+(id>names.length?' '+(id-1):''));
+ const p={id:id++,name:n,x:.5+(Math.random()-.5)*.52,y:.5+(Math.random()-.5)*.52,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22,hp:100,score:0,alive:true,cool:0};
+ const el=document.createElement('div');el.className='player';
+ const av=document.createElement('div');av.className='avatar';
+ if(photoUrl && !customName){const im=document.createElement('img');im.src=photoUrl;av.append(im)}else av.textContent=faces[(p.id-1)%faces.length];
+ const nm=document.createElement('div');nm.className='name';nm.textContent=p.name;
+ const hp=document.createElement('div');hp.className='hp';const bar=document.createElement('span');hp.append(bar);
+ el.append(av,nm,hp);arena.append(el);p.el=el;p.bar=bar;ps.push(p);
+ addLog('🟢 '+p.name+' joined');
+ render();
+ statusEl.textContent=p.name+' joined the arena!';
+ return p;
+}
+
+function render(){
+ ps.forEach(p=>{
+  p.el.style.left=(p.x*100)+'%';p.el.style.top=(p.y*100)+'%';
+  p.el.style.opacity=p.alive?1:.2;p.el.style.filter=p.alive?'':'grayscale(1)';
+  p.bar.style.width=p.hp+'%';p.bar.style.background=p.hp<35?'#ff5555':'#6bea79';
+ });
+ count.textContent='Players: '+ps.filter(p=>p.alive).length+'/'+ps.length;
+ ranking.innerHTML=ps.slice().sort((a,b)=>b.score-a.score).map((p,i)=>`<div class="item"><span>${i+1}. ${p.name}${p.alive?'':' OUT'}</span><b>${p.score} · ${p.hp}HP</b></div>`).join('')||'No players';
+ feed.innerHTML=logs.map(s=>`<div class="item feed">${s}</div>`).join('');
+}
+
+function stop(){running=false;cancelAnimationFrame(raf)}
+
+function frame(t){
+ if(!running)return;
+ let dt=Math.min((t-last)/1000,.04)||.016;last=t;
+ let alive=ps.filter(p=>p.alive);
+ alive.forEach(p=>{
+  p.x+=p.vx*dt;p.y+=p.vy*dt;
+  let dx=p.x-.5,dy=p.y-.5,d=Math.hypot(dx,dy),lim=.405;
+  if(d>lim){let nx=dx/d,ny=dy/d;p.x=.5+nx*lim;p.y=.5+ny*lim;let dot=p.vx*nx+p.vy*ny;p.vx-=2*dot*nx;p.vy-=2*dot*ny}
+  if(Math.random()<.035){p.vx+=(Math.random()-.5)*.12;p.vy+=(Math.random()-.5)*.12}
+  let s=Math.hypot(p.vx,p.vy)||1;p.vx=p.vx/s*.16;p.vy=p.vy/s*.16;
+ });
+ for(let i=0;i<alive.length;i++)for(let j=i+1;j<alive.length;j++){
+  let a=alive[i],b=alive[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+  if(d<.115&&d>.001){
+   let nx=dx/d,ny=dy/d;a.vx-=nx*.045;a.vy-=ny*.045;b.vx+=nx*.045;b.vy+=ny*.045;
+   if(!a.cool&&!b.cool){
+    a.hp=Math.max(0,a.hp-5);b.hp=Math.max(0,b.hp-5);a.cool=b.cool=22;a.score++;b.score++;
+    if(a.hp===0)a.alive=false;if(b.hp===0)b.alive=false;
+   }
+  }
+ }
+ ps.forEach(p=>{if(p.cool>0)p.cool--});render();
+ let remaining=ps.filter(p=>p.alive);
+ if(ps.length>1&&remaining.length===1){
+  document.getElementById('winnerName').textContent=remaining[0].name;
+  win.style.display='flex';statusEl.textContent=remaining[0].name+' is Champion!';stop();return;
+ }
+ raf=requestAnimationFrame(frame);
+}
+
+// --- TikTok LIVE Socket.io සම්බන්ධතාවය ---
+if(typeof io!=='undefined'){
+ const socket=io();
+
+ socket.on('connect',()=>{
+  liveBadge.textContent='🟢 LIVE READY';
+ });
+ socket.on('disconnect',()=>{
+  liveBadge.textContent='🔴 DISCONNECTED';
+ });
+
+ // 1. Comment එකක් ආවම Join වීම
+ socket.on('tiktok-chat',(data)=>{
+  if(!data || !data.user) return;
+  let p=findPlayer(data.user);
+  if(!p){
+   addPlayer(data.user);
+  }else{
+   addLog('💬 '+data.user+': '+data.comment.slice(0,18));
+   render();
+  }
+ });
+
+ // 2. Gift එකක් ආවම Join + Full Heal/Revive + Score Boost
+ socket.on('tiktok-gift',(data)=>{
+  if(!data || !data.user) return;
+  let p=findPlayer(data.user) || addPlayer(data.user);
+  if(p){
+   p.alive=true;
+   p.hp=100;
+   p.score+=(data.diamonds || 5)*2;
+   addLog('🎁 '+data.user+' sent '+data.count+'x '+data.giftName);
+   statusEl.textContent='🎁 '+data.user+' POWER UP! (+HP & Score)';
+   render();
+  }
+ });
+
+ // 3. Likes ආවම Join හෝ HP Heal වීම
+ socket.on('tiktok-like',(data)=>{
+  if(!data || !data.user) return;
+  let p=findPlayer(data.user);
+  if(!p){
+   addPlayer(data.user);
+  }else if(p.alive){
+   p.hp=Math.min(100,p.hp+5);
+   p.score+=1;
+   addLog('❤️ '+data.user+' +5 HP');
+   render();
+  }
+ });
+}
+
+document.getElementById('start').onclick=()=>{
+ if(ps.length<2)while(ps.length<4)addPlayer();
+ if(ps.filter(p=>p.alive).length<2){resetRound()}
+ if(!running){running=true;last=0;statusEl.textContent='Battle in progress! 💥';raf=requestAnimationFrame(frame)}
+};
+document.getElementById('pause').onclick=()=>{stop();statusEl.textContent='Paused ⏸️'};
+document.getElementById('join').onclick=()=>{addPlayer()};
+document.getElementById('photo').onclick=()=>document.getElementById('file').click();
+document.getElementById('file').onchange=e=>{let f=e.target.files[0];if(!f)return;let reader=new FileReader();reader.onload=()=>{photoUrl=reader.result;statusEl.textContent='Photo එක ඊළඟ Demo Playerට යොදනවා.'};reader.readAsDataURL(f)};
+function resetRound(){
+ stop();roundNo++;document.getElementById('round').textContent='ROUND '+roundNo;
+ ps.forEach(p=>{p.hp=100;p.alive=true;p.score=0;p.cool=0;p.x=.5+(Math.random()-.5)*.5;p.y=.5+(Math.random()-.5)*.5;p.vx=(Math.random()-.5)*.2;p.vy=(Math.random()-.5)*.2});
+ win.style.display='none';render();statusEl.textContent='New round ready!';
+}
+document.getElementById('again').onclick=()=>{resetRound();document.getElementById('start').click()};
+
+for(let i=0;i<4;i++)addPlayer();render();
+</script></body></html>
